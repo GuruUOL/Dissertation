@@ -20,10 +20,9 @@ producer.on('ready', function() {
   console.log('Producer ready');
 
   const topic = 'test_topic';
-  const messageSizeInBytes = 4 * 1024; // 4KB
 
   setInterval(() => {
-    const message = fs.readFileSync('large_file.txt').toString(); // Replace with your message source
+    const message = fs.readFileSync('large_file.txt').toString(); 
     producer.produce(topic, null, Buffer.from(message), null, Date.now());
   }, 100); // Adjust the interval as needed
 });
