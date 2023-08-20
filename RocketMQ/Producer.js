@@ -1,35 +1,32 @@
-const rocketmq = require('rocketmq-nodejs-client');
+const RocketMQProducer = require('apache-rocketmq').Producer;
 const fs = require('fs');
-const { PerformanceObserver, performance } = require('perf_hooks');
 
-const producer = new rocketmq.Producer({
-  namesrv: 'localhost:9876' // Replace with your RocketMQ namesrv address
+const producer = new RocketMQProducer({
+  producerGroup: 'test_producer_group',
+  nameServer: 'localhost:9876' // Replace with your RocketMQ namesrv address
 });
 
-producer.start();
+async function publishMessage() {
+  await producer.start();
 
-const topic = 'test_topic';
-const messageSizeInBytes = 4 * 1024; // 4KB
-
-const observer = new PerformanceObserver((list) => {
-  const entry = list.getEntries()[0];
-  const latency = entry.duration;
-  console.log(`Sent message | Latency: ${latency} ms`);
-});
-observer.observe({ entryTypes: ['measure'] });
-
-producer.on('ready', async () => {
-  console.log('Producer ready');
+  const topic = 'test_topic';
+  const messageSizeInBytes = 4 * 1024; // 4KB
 
   setInterval(async () => {
     const message = fs.readFileSync('large_file.txt').toString(); // Replace with your message source
-    const start = performance.now();
-    
-    const msg = new rocketmq.Message('test_message', Buffer.from(message));
-    msg.topic = topic;
-    await producer.send(msg);
+    const startTime = Date.now();
 
-    const end = performance.now();
-    performance.measure('message-sent', start, end);
+    const result = await producer.send({
+      topic,
+      body: Buffer.from(message)
+    });
+
+    const endTime = Date.now();
+    const latency = endTime - startTime;
+    console.log(`Sent message | Latency: ${latency} ms`);
   }, 100); // Adjust the interval as needed
+}
+
+publishMessage().catch((err) => {
+  console.error('Error occurred:', err);
 });
